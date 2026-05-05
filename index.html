@@ -39,7 +39,7 @@ async function generate() {
       messages: [{role: "user", content: prompt}]
     })
   });
-
+ 
   let data = await res.json();
   document.getElementById("result").innerText =
     data.choices[0].message.content;
