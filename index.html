@@ -2,47 +2,51 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>广东高考志愿助手</title>
+  <title>广东志愿填报助手</title>
 </head>
 <body>
-  <h1>🎓 广东志愿填报助手</h1>
+<h1>🎓 广东志愿填报助手</h1>
 
-  <input id="score" placeholder="输入分数">
-  <select id="subject">
-    <option value="物理">物理</option>
-    <option value="历史">历史</option>
-  </select>
+<input id="score" placeholder="输入分数">
+<select id="subject">
+  <option value="物理">物理</option>
+  <option value="历史">历史</option>
+</select>
+<button onclick="generate()">开始推荐</button>
 
-  <button onclick="generate()">开始推荐</button>
-
-  <pre id="result"></pre>
+<pre id="result"></pre>
 
 <script>
 async function generate() {
-  let score = document.getElementById("score").value;
-  let subject = document.getElementById("subject").value;
+  const score = document.getElementById("score").value;
+  const subject = document.getElementById("subject").value;
 
-  let prompt = `
-你是一名广东高考志愿填报专家。
-分数:${score}，选科:${subject}。
-请推荐冲稳保院校，并说明理由。
-`;
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score, subject })
+    });
 
-  let res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer YOUR_API_KEY"
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [{role: "user", content: prompt}]
-    })
-  });
- 
-  let data = await res.json();
-  document.getElementById("result").innerText =
-    data.choices[0].message.content;
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const data = await res.json();
+
+    let html = "冲刺院校:\n";
+    data.chong.forEach(s => html += `- ${s.name} (推荐专业: ${s.recommended_major.join(", ")})\n`);
+
+    html += "\n稳妥院校:\n";
+    data.wen.forEach(s => html += `- ${s.name} (推荐专业: ${s.recommended_major.join(", ")})\n`);
+
+    html += "\n保底院校:\n";
+    data.bao.forEach(s => html += `- ${s.name} (推荐专业: ${s.recommended_major.join(", ")})\n`);
+
+    document.getElementById("result").innerText = html;
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("result").innerText = "请求失败，请检查 API 或数据路径。";
+  }
 }
 </script>
 </body>
